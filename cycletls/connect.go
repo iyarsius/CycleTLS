@@ -10,11 +10,8 @@ import (
 	"io"
 	"net"
 	"net/url"
-	"log"
 	"strconv"
 	"sync"
-	"github.com/custhk/http2demo/resource"
-	"time"
 	http "github.com/Danny-Dasilva/fhttp"
 	http2 "github.com/Danny-Dasilva/fhttp/http2"
 	"golang.org/x/net/proxy"
@@ -94,58 +91,7 @@ func newConnectDialer(proxyURLStr string, UserAgent string) (proxy.ContextDialer
 func (c *connectDialer) Dial(network, address string) (net.Conn, error) {
 	return c.DialContext(context.Background(), network, address)
 }
-type DefaultPushHandler struct {
-}
 
-// NewDefaultPushHandler return new push handler
-func NewDefaultPushHandler() *DefaultPushHandler {
-    return &DefaultPushHandler{}
-}
-
-func (ph *DefaultPushHandler) HandlePush(r *http2.PushedRequest) {
-	handleWrite := make(chan struct{})
-	// promise request
-	promise := r.Promise
-	go func() {
-		defer close(handleWrite)
-		if promise == nil {
-			log.Printf("promise not received")
-			return
-		} else {
-			log.Print("Promise received")
-		}
-	
-		// parse to get fileInfo
-		fileInfo := resource.ParseURL(promise.URL.Path)
-		if fileInfo != nil {
-			push, pushErr := r.ReadResponse(r.Promise.Context())
-			//receiveTimeStamp := time.Now().UnixNano() / 1e6
-	
-			if pushErr != nil {
-				log.Printf("push error = %v; want %v", pushErr, nil)
-			}
-			if push == nil {
-				log.Printf("push not received")
-			} else {
-				fileInfo = resource.SaveRes(fileInfo, push)
-				if fileInfo != nil {
-					log.Printf("save  push file = %q\n", promise.URL.Path)
-					log.Printf("push file size= %v\n", fileInfo.GetDataSize())
-				}
-	
-			}
-		}
-	
-	}()
-	
-	select {
-	case <-handleWrite:
-	case <-time.After(5 * time.Second):
-		//case <-time.After(1 * time.Nanosecond):
-		r.Cancel()
-		log.Printf("-------cancel push file = %q\n-----------", promise.URL.Path)
-	}
-}
 // ContextKeyHeader Users of context.WithValue should define their own types for keys
 type ContextKeyHeader struct{}
 
