@@ -5,6 +5,7 @@
 Added image and Arm support
 ### Enhancements
 - Changed default request timeout to 15 seconds
+- [remove duplicate sources](https://github.com/Danny-Dasilva/CycleTLS/issues/85)
 ### Bug Fixes
 - [Fix installation dependencies](https://github.com/Danny-Dasilva/CycleTLS/issues/84)
 - Don't crash if golang websocket server receives a normal http request
