@@ -87,7 +87,6 @@ test("Response bodies should be decoded", async () => {
             {
                 ja3: ja3,
                 userAgent: userAgent,
-                timeout: 20,
             },
             "get"
         );

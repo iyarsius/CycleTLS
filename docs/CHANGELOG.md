@@ -1,5 +1,16 @@
 # CycleTLS Changelog
 
+## 0.0.20 - (4-20-2022)
+### Release Highlights
+Added image and Arm support
+### Enhancements
+- Changed default request timeout to 15 seconds
+### Bug Fixes
+- [Fix installation dependencies](https://github.com/Danny-Dasilva/CycleTLS/issues/84)
+- Don't crash if golang websocket server receives a normal http request
+- Update npm dependencies
+- Added site support from updates to [fhttp](https://github.com/Danny-Dasilva/fhttp) and [utls](https://github.com/Danny-Dasilva/utls)
+
 ## 0.0.19 - (4-20-2022)
 ### Release Highlights
 Added image and Arm support

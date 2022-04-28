@@ -96,7 +96,7 @@ func unBrotliData(data []byte) (resData []byte, err error) {
 
 // StringToSpec creates a ClientHelloSpec based on a JA3 string
 func StringToSpec(ja3 string, userAgent string) (*utls.ClientHelloSpec, error) {
-	parsedUserAgent := parseUserAgent("chrome")
+	parsedUserAgent := parseUserAgent(userAgent)
 	extMap := genMap()
 	tokens := strings.Split(ja3, ",")
 
@@ -165,6 +165,10 @@ func StringToSpec(ja3 string, userAgent string) (*utls.ClientHelloSpec, error) {
 			exts = append(exts, &utls.UtlsGREASEExtension{})
 		}
 		exts = append(exts, te)
+	}
+	if parsedUserAgent == chrome {
+		exts = append(exts, &utls.UtlsGREASEExtension{})
+		exts = append(exts, &utls.UtlsPaddingExtension{GetPaddingLen: utls.BoringPaddingStyle})
 	}
 	// build SSLVersion
 	// vid64, err := strconv.ParseUint(version, 10, 16)
@@ -252,6 +256,11 @@ func genMap() (extMap map[string]utls.TLSExtension) {
 		}},
 		"30032": &utls.GenericExtension{Id: 0x7550, Data: []byte{0}}, //FIXME
 		"13172": &utls.NPNExtension{},
+		"17513": &utls.ApplicationSettingsExtension{
+			SupportedALPNList: []string{
+				"h2",
+			},
+		},
 		"65281": &utls.RenegotiationInfoExtension{
 			Renegotiation: utls.RenegotiateOnceAsClient,
 		},
