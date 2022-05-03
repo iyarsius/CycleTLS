@@ -60,6 +60,7 @@ func DecompressBody(Body []byte, encoding []string, content []string) (parsedBod
 			"image/webp":    true,
 			"image/jpeg":    true,
 			"image/png":     true,
+			"application/pdf": true,
 		}
 		if decodingTypes[content[0]] {
 			return base64.StdEncoding.EncodeToString(Body)

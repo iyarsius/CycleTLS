@@ -1,100 +1,154 @@
 package main
 
 import (
-    "github.com/Noooste/connectproxy"
-    utls "github.com/Noooste/utls"
-    Proxy "golang.org/x/net/proxy"
-    "net"
-    URL "net/url"
+	"bytes"
+	"io"
+	"log"
+	"mime/multipart"
+	"net/http"
+	"os"
+    "io/ioutil"
+	"path"
+	"path/filepath"
+	"compress/gzip"
+	"compress/zlib"
+	"encoding/base64"
     "strings"
+	
+
+	"github.com/andybalholm/brotli"
 )
 
-func PrepareTransport(helloId utls.ClientHelloID, proxy string, url string) (*utls.UConn, error) {
-
-    //prepare server address (securised address)
-    //TODO : put 80
-    parsedURL, _ := URL.Parse(url)
-
-    addr := parsedURL.Hostname()
-
-    addr += ":443"
-
-    var conn net.Conn
-    var err error
-
-    //if not proxy
-    if proxy != "" {
-
-        proxyURI, _ := URL.Parse(proxy)
-
-        //use proxy dialer
-        proxyDialer, _ := connectproxy.New(proxyURI, Proxy.Direct)
-
-        conn, err = proxyDialer.Dial("tcp", addr)
-
-        if err != nil {
-            return nil, err
-        }
-
-        //else
-    } else {
-
-        //normal dial
-        conn, err = net.Dial("tcp", addr)
-
-        if err != nil {
-            return nil, err
-        }
-    }
-
-    config := utls.Config{
-        ServerName: parsedURL.Hostname(),
-    }
-
-    //create client
-    uconn := utls.UClient(conn, &config, helloId)
-
-    colonPos := strings.LastIndex(addr, ":")
-    if colonPos == -1 {
-        colonPos = len(addr)
-    }
-
-    uconn.SetSNI(addr[:colonPos])
-
-    //tls handshake
-    err = uconn.Handshake()
-
-    //return client
-    return uconn, err
+func gUnzipData(data []byte) (resData []byte, err error) {
+	gz, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return []byte{}, err
+	}
+	defer gz.Close()
+	respBody, err := ioutil.ReadAll(gz)
+	return respBody, err
 }
-type Request struct {
-    Method        string
-    Url           string
-    Data          string
-    Proxy         string
-    Header        map[string][]string
-    HeaderOrder   []string
-    Browser       string
-    AllowRedirect bool
+func enflateData(data []byte) (resData []byte, err error) {
+	zr, err := zlib.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return []byte{}, err
+	}
+	defer zr.Close()
+	enflated, err := ioutil.ReadAll(zr)
+	return enflated, err
 }
-func getUconn(request *Request) (*utls.UConn, error) {
-    var helloId utls.ClientHelloID
-
-    switch request.Browser {
-    case "firefox":
-        helloId = utls.HelloFirefox_99
-
-    case "chrome":
-        helloId = utls.HelloChrome_100
-
-    default:
-        panic(request.Browser + " is not supported.\n")
-    }
-
-    return PrepareTransport(helloId, request.Proxy, request.Url)
+func unBrotliData(data []byte) (resData []byte, err error) {
+	br := brotli.NewReader(bytes.NewReader(data))
+	respBody, err := ioutil.ReadAll(br)
+	return respBody, err
 }
+func DecompressBody(Body []byte, encoding []string, content []string) (parsedBody string) {
+	if len(encoding) > 0 {
+		if encoding[0] == "gzip" {
+			unz, err := gUnzipData(Body)
+			if err != nil {
+				return string(Body)
+			}
+			return string(unz)
+		} else if encoding[0] == "deflate" {
+			unz, err := enflateData(Body)
+			if err != nil {
+				return string(Body)
+			}
+			return string(unz)
+		} else if encoding[0] == "br" {
+			unz, err := unBrotliData(Body)
+			if err != nil {
+				return string(Body)
+			}
+			return string(unz)
+		}
+	} else if len(content) > 0 {
+		decodingTypes := map[string]bool{
+			"image/svg+xml": true,
+			"image/webp":    true,
+			"image/jpeg":    true,
+			"image/png":     true,
+		}
+		if decodingTypes[content[0]] {
+			return base64.StdEncoding.EncodeToString(Body)
+		}
+	}
+	parsedBody = string(Body)
+	return parsedBody
+
+}
+// func main() {
+//   fileDir, _ := os.Getwd()
+//   fileName := "README.md"
+//   filePath := path.Join(fileDir, fileName)
+
+//   file, _ := os.Open(filePath)
+//   defer file.Close()
+
+//   body := &bytes.Buffer{}
+//   writer := multipart.NewWriter(body)
+//   part, _ := writer.CreateFormFile("file", filepath.Base(file.Name()))
+//   io.Copy(part, file)
+//   writer.Close()
+
+//   r, _ := http.NewRequest("POST", "http://httpbin.org/post", body)
+//   r.Header.Add("Content-Type", writer.FormDataContentType())
+//   client := &http.Client{}
+//   resp, err := client.Do(r)
+//   if err != nil {
+//     log.Println("err")
+//     }
+//   bodyBytes, err := ioutil.ReadAll(resp.Body)
+//   encoding := resp.Header["Content-Encoding"]
+//   content := resp.Header["Content-Type"]
+
+//   Body := DecompressBody(bodyBytes, encoding, content)
+//   log.Println(Body)
+
+// }
 
 func main() {
-	getUconn(&Request{Method: "Get", Url: "https://google.com", Browser: "chrome"})
+    fileDir, _ := os.Getwd()
+    fileName := "README.md"
+    filePath := path.Join(fileDir, fileName)
+    file, _ := os.Open(filePath)
+    _=filepath.Base(file.Name())
 
-}
+    defer file.Close()
+  
+    body := &bytes.Buffer{}
+    writer := multipart.NewWriter(body)
+    fw, err := writer.CreateFormField("name")
+    if err != nil {
+    }
+    _, err = io.Copy(fw, strings.NewReader("John"))
+    if err != nil {
+        log.Println("err")
+    }
+    ///////////////
+    fw, err = writer.CreateFormField("age")
+    if err != nil {
+    }
+    _, err = io.Copy(fw, strings.NewReader("23"))
+    if err != nil {
+        log.Println("err")
+    }
+    //////////
+    writer.Close()
+  
+    r, _ := http.NewRequest("POST", "http://httpbin.org/post", body)
+    r.Header.Add("Content-Type", writer.FormDataContentType())
+    client := &http.Client{}
+    resp, err := client.Do(r)
+    if err != nil {
+      log.Println("err")
+      }
+    bodyBytes, err := ioutil.ReadAll(resp.Body)
+    encoding := resp.Header["Content-Encoding"]
+    content := resp.Header["Content-Type"]
+  
+    Body := DecompressBody(bodyBytes, encoding, content)
+    log.Println(Body)
+  
+  }

@@ -2,15 +2,16 @@
 
 ## 0.0.20 - (4-20-2022)
 ### Release Highlights
-Added image and Arm support
+Add support for extension 17513 and package cleanup
 ### Enhancements
 - Changed default request timeout to 15 seconds
 - [remove duplicate sources](https://github.com/Danny-Dasilva/CycleTLS/issues/85)
+- [Added support for extension 17513](https://github.com/Danny-Dasilva/CycleTLS/issues/70)
+- [post ContentType multipart/form-data](https://github.com/Danny-Dasilva/CycleTLS/issues/89)
+- add support for `application/pdf`, 
 ### Bug Fixes
-- [Fix installation dependencies](https://github.com/Danny-Dasilva/CycleTLS/issues/84)
-- Don't crash if golang websocket server receives a normal http request
-- Update npm dependencies
-- Added site support from updates to [fhttp](https://github.com/Danny-Dasilva/fhttp) and [utls](https://github.com/Danny-Dasilva/utls)
+- [properly add grease](https://github.com/Danny-Dasilva/CycleTLS/issues/53)
+
 
 ## 0.0.19 - (4-20-2022)
 ### Release Highlights
